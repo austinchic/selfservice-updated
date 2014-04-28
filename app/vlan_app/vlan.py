@@ -20,31 +20,41 @@ def index():
     if login.current_user.is_anonymous() == True:
         return redirect(url_for('login_view') + '?next=/vlan/')
 
+    # Get a list of ports/portgroups that the user is associated with.
     portgrp = main.db.session.query(Portgroup).filter(Portgroup.assigned_to.any(main.User.username==login.current_user.username)).all()
     ports = main.db.session.query(Port).filter(Port.assigned_to.any(main.User.username==login.current_user.username)).all();
     
-    # go thru each group and extract ports, using set get rid of duplicates
+    # Go thru each group and extract ports, using a set to get rid of duplicates
     temp_ports = []
     for i in portgrp:
         temp_ports += set(i.ports)
-
     ports = set(temp_ports + ports)
-
+    
+    # check if port.switch is None, if so remove it from the list. TODO: Clean up database.
+    ports = filter(lambda port: port.switch is not None, ports)
+    
+    valid_ports = []
     for port in ports:
-        # setting current vlan for this ports
-        port.current_vlan = port.getVLAN()
+        # TODO: Add named exception for SNMP errors.
+        try:
+            # setting current vlan for this ports
+            port.current_vlan = port.getVLAN()
+            valid_ports.append(port)
+        except:
+            print "ERROR: Failed retrieving VLAN."
 
+    # Get the VLANs the user is associated with.
     vlangrp = main.db.session.query(Vlangroup).filter(Vlangroup.assigned_to.any(main.User.username==login.current_user.username)).all()
     vlans = main.db.session.query(Vlan).filter(Vlan.assigned_to.any(main.User.username==login.current_user.username)).all();
 
     temp_vlans = []
     for i in vlangrp:
         temp_vlans += set(i.vlans)
-
     vlans = set(vlans + temp_vlans)
     vlans = sorted(vlans, key=lambda v: v.number)
 
-    return render_template('vlan/vlan_home.html', user=login.current_user, ports=ports, vlans=vlans)
+    # Render the page with the valid ports, their assigned vlans and the user's available vlans.
+    return render_template('vlan/vlan_home.html', user=login.current_user, ports=valid_ports, vlans=vlans)
 
 #### API ####
 @vlan.route("/api/set", methods=["POST"])
