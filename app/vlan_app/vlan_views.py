@@ -27,6 +27,10 @@ class Overview(admin.base.BaseView):
                 temp_ports += set(i.ports)
 
             ports = set(temp_ports + ports)
+            
+            # filter out ports with no switch to prevent the lookup failure.
+            ports = filter(lambda port: port.switch is not None, ports)
+            
             try:
               sorted_ports = sorted(ports, key=attrgetter('switch.name', 'name', 'number'))
               ports_str = ", ".join(map(lambda port: str(port.switch.name) + ": " + str(port.name), sorted_ports))
