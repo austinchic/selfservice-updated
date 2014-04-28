@@ -1,0 +1,305 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+	.add-job {
+		float: right;
+	}
+
+	.btn {
+
+	}
+
+	.shark-jobs {
+		list-style: none;
+		margin: 0px;
+		background: #ffffff;
+	}
+
+	.shark-job {
+		box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.5);
+		margin-bottom: 10px;
+	}
+
+	.shark-job-btns {
+		float: right;
+		padding-top: 10px;
+	}
+
+	.progress {
+		width: 80%;
+		float: left;
+	}
+
+	.percent {
+		float: right;
+		font-weight: bolder;
+		width: 20%;
+		text-align: center;
+	}
+
+	.units{
+		font-style: normal;
+		font-weight: lighter;
+		font-size: .7em;
+	}
+
+	.title {
+		font-weight: bold;
+		font-size: 25px;
+		line-height: 35px;
+	}
+
+	.status {
+		float: right;
+		margin-right: 100px;
+		font-weight: bolder;
+		font-size: 15px;
+		line-height: 28px;
+	}
+
+	.status-stopped {
+		color: #DA4F49;
+	}
+
+	.status-running {
+		color: #5BB75B;
+	}
+
+	.start-job, .stop-job {
+		float: right;
+	}
+
+	.job-header {
+		height: 35px;
+		cursor: pointer;
+		padding: 10px;
+	}
+
+	.job-content {
+		height: 50px;
+		background: #EEE;
+		padding: 20px;
+		display: none;
+	}
+
+	.shark-controls {
+		padding-bottom: 25px;
+	}
+
+	hr {
+		width: 100%;
+	}
+
+</style>
+<ul id="bread" class="breadcrumb panel corners">
+  	<li>
+    	<a href="{{url_for('index')}}">Self Service</a><span class="divider">/</span><a href="{{url_for('shark.index')}}">Packet Capture</a></span>
+	</li>
+</ul>
+<div id="main" class="panel corners">
+	<div class="row">
+		<form class="shark-controls form-inline span4" method="POST" action="{{url_for('shark.create_job')}}">
+			<input class="input-big" type="text" name="job_name" placeholder="Name.."></input>
+			<input class="input-big" type="text" name="job_filter" placeholder="IP Address.."></input>
+			<select name="job_interface">
+				<option value="null">Select a interface</option>
+				<option value="tc0">tc0</option>
+				<option value="tc1">tc1</option>
+			</select>
+			<input class="input-big" style="display:none;" value="1073741824" type="text" name="job_size" placeholder="Bytes.."></input>
+			<input type="submit" class="btn btn-primary add-job" value="Add Job"></input>
+		</form>
+		<span class="help-block pull-right span7" style="float: right; margin-top: 10px; margin-bottom: 0px;">
+			<span class="label label-important">Important</span>
+			<ul>
+				<li>
+					<small style="font-size: smaller !important;">The IP Address must be on a different subnet than the device you are attempting to communicate with.</small>
+				</li>
+				<li>
+					<small style="font-size: smaller !important;">If you don't see any packets, try a different interface.</small>
+				</li>
+			</ul>
+		</span>
+
+		<div class="clear-fix"></div>
+	</div>
+	<hr/>
+	<ul class="shark-jobs">
+		{% for i in jobs %}
+			<li class="shark-job" id="job-{{i.id}}" data-id={{i.id}} data-limit={{i.job_limit}}>
+				<div class="job-header">
+					<span class="title pull-left">{{ i.job_name }} on {{i.job_interface}}</span>
+<!-- 					<span class="content-toggle btn pull-right"><span class="caret"></span></span> -->
+					{% if i.is_stopped() == True %}
+						<span class="btn btn-success start-job" data-job-id={{i.id}}>Start</span>
+						<span class="btn btn-warning stop-job" style="display: none" data-job-id={{i.id}}>Stop</span>
+					{% else %}
+						<span class="btn btn-success start-job" style="display: none" data-job-id={{i.id}}>Start</span>
+						<span class="btn btn-warning stop-job" data-job-id={{i.id}}>Stop</span>
+					{% endif %}
+
+				</div>
+				<div class="job-content">
+					<div class="progress progress-striped">
+					  <div class="bar" style="width: {{i.get_status().get('packet_size') / i.job_limit * 100}}%;"></div>
+					</div>
+					<div class="percent">
+						<span class="number job-progress-size" data-number-val={{i.get_status().get('packet_size')}}>
+							<span class="value">{{i.get_status().get('packet_size')}}</span>
+							<span class="units">MB</span>
+						</span>
+						 / 
+						<span class="number job-progress-limit" data-number-val={{i.job_limit}}>
+							<span class="value">{{i.job_limit}}</span>
+							<span class="units">GB</span>
+						</span> 
+					</div>
+					<div class="shark-job-btns">
+						<span class="btn download-job" data-job-id={{i.id}}><a href="{{url_for('shark.download_capture', id=i.id)}}">Download Capture</a></span>
+						<span class="btn btn-danger delete-job" data-job-id={{i.id}}>Delete</span>
+					</div>
+				</div>
+			</li>
+		{% endfor %}
+	</ul>
+</div>
+
+<script>
+$(document).ready(function(){
+
+	var interval_id;
+	interval_id = setInterval(updateJobs, 1000);
+
+	$(window).focus(function() {
+		if (!interval_id)
+			interval_id = setInterval(updateJobs, 1000);
+	});
+
+	$(window).blur(function() {
+		clearInterval(interval_id);
+		interval_id = 0;
+	});
+
+	// $(".time").each(function(){
+	// 	var date = $(this).text()
+	// 	date = parseInt(date)
+	// 	date = date/1000000
+	// 	date = new Date(date);
+	// 	$(this).text(date)
+	// });
+
+	$(".number").each(function(){
+		var $value = $(this).find(".value");
+		var $units = $(this).find(".units");
+		var val = $(this).data("numberVal");
+
+		var newValue = prettifyNumber(val);
+		$value.text(newValue.value);
+		$units.text(newValue.unit);
+	});
+
+	function prettifyNumber(number) {
+		if(number < 1) 
+			return {unit: 'B', value: number}
+
+		var unitMap = {
+			"GB" : 1073741824,
+			"MB" : 1048576,
+			"KB" : 1024,
+			"B" : 1
+		}
+
+		for(var i in unitMap) {
+			var newValue = number / unitMap[i];
+			if(newValue >= 1) {
+				return {unit: i, value: newValue.toFixed(2)};
+			}
+		}
+	}
+
+	function updateJob(id){
+		var base_url = {{url_for('shark.index')}}
+		var url = base_url + 'api/status/' + id
+
+		$.ajax({
+			url: url,
+			type: "GET",
+			success: function(resp) {
+				$el = $("#job-"+id);
+
+				// update progress bar 
+				var limit = $el.data('limit');
+				var percent = resp.packet_size / limit * 100
+				$el.find(".progress .bar").css("width", percent + "%");
+
+				// update progress stats
+				var pretty = prettifyNumber(resp.packet_size);
+				$el.find(".job-progress-size .value").text(pretty.value);
+				$el.find(".job-progress-size .units").text(pretty.unit);
+
+				if(resp.state === "RUNNING") {
+					$el.find(".progress").addClass('active');
+					$el.find(".start-job").hide()
+					$el.find(".stop-job").show();
+				}else{
+					$el.find(".progress").removeClass('active');
+					$el.find(".start-job").show()
+					$el.find(".stop-job").hide();
+				}
+			}
+		})
+	}
+
+	function updateJobs() {
+		$(".shark-job").each(function(){
+			var id = $(this).data("id");
+			updateJob(id);
+		});
+	}
+
+	$(".shark-jobs").on("click", ".job-header", function(e){
+		if($(e.target).hasClass("start-job")) { 
+			var id = $(e.target).data('jobId');
+			var base_url = {{url_for('shark.index')}}
+			var url = base_url + 'api/start/' + id
+			$.ajax({
+				url: url,
+				success: function(resp) {
+					console.log(resp);
+				}
+			})
+			return; 
+		}
+
+		if($(e.target).hasClass("stop-job")) {
+			var id = $(e.target).data('jobId');
+			var base_url = {{url_for('shark.index')}}
+			var url = base_url + 'api/stop/' + id
+			$.ajax({
+				url: url,
+				success: function(resp) {
+					console.log(resp);
+				}
+			})
+			return; 
+		}
+
+		$(this).siblings(".job-content").toggle();
+	});
+
+	$(".shark-jobs").on("click", ".delete-job", function(e){
+		var id = $(this).data('jobId');
+		var base_url = {{url_for('shark.index')}}
+		var url = base_url + 'api/delete/' + id
+		$.ajax({
+			url: url,
+			success: function(resp) {
+				$("#job-"+id).remove()
+			}
+		})
+		return; 
+	});
+});
+</script>
+
+{% endblock %}

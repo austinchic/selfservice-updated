@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<ul id="bread" class="breadcrumb panel corners">
+  	<li>
+    	<a href="{{url_for('index')}}">Self Service</a><span class="divider">/</span>
+	</li>
+</ul>
+<div id="main" class="panel corners">
+	<ul>
+		<li><a href="{{url_for('vlan.index')}}">VLAN Provisioning</a></li>
+		<li><a href="{{url_for('shark.index')}}">Packet Capture</a></li>
+	</ul>
+</div>
+{% endblock %}

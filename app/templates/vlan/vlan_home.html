@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block content %}
+<ul id="bread" class="breadcrumb panel corners">
+  	<li>
+    	<a href="{{url_for('index')}}">Self Service</a><span class="divider">/</span><a href="{{url_for('vlan.index')}}">VLAN Provisioning</a></span>
+	</li>
+</ul>
+<div id="main" class="panel corners">
+	<table id="vlan-home" class="table table-striped tablesorter">
+		<thead>
+			<th>Switch</th>
+			<th>Port</th>
+			<th>Current VLAN</th>
+			<th>Available VLANs</th>
+			<th></th>
+		</thead>
+		<tbody>
+		    {% for port in ports %}
+		    	<tr data-port-number="{{port.number}}" data-port-id="{{port.id}}" data-switch-id="{{port.switch_id}}">
+		    		<td>{{ port.switch }}</td>
+		    		<td>{{ port.name }}</td>
+		    		<td class="current-vlan">{{ port.current_vlan }}</td>
+		    		<td>
+		    			<div class="vlan-select-wrapper">
+							<select class="vlan-select">
+								<option value="null">Select A New Vlan</option>
+								{% for vlan in vlans %}
+							    	<option value="{{ vlan.number }}">{{ vlan.number }} - {{ vlan.name }}</option>
+							    {% endfor %}
+							</select>
+						</div>
+					</td>
+					<td>
+						<button class="btn btn-primary set-vlan">Set VLAN</button>		   
+					</td>
+		    	</tr>
+		    {% endfor %}
+		</tbody>
+	</table><a href="#" id="trigger-link"></a>
+</div>
+
+<script>
+	(function() {
+		//init table sorter
+		$.tablesorter.addParser({ 
+		// set a unique id 
+			id: 'patchpanel', 
+			is: function(s) { 
+				// return false so this parser is not auto detected 
+				return false; 
+			}, 
+			format: function(s) { 
+				if( !s || s.length == 0 )
+					return 0;
+
+				var temp = s.split('-');
+
+				if( temp.length < 2 )
+					return s;
+
+				var pp = temp[0].substring(2);
+				var port = temp[1];
+				return parseInt(pp) * 10000 + parseInt(port);
+			}, 
+			// set type, either numeric or text 
+			type: 'numeric' 
+		}); 
+
+		$("#vlan-home").tablesorter({
+			headers: {
+				1: {
+					sorter: 'patchpanel'
+				},
+				3: {
+					sorter: false
+				},
+				4: {
+					sorter: false
+				}
+			}
+		});
+
+		//init set vlan functionality
+		$(".set-vlan").click(function(e) {
+			var tr = $(this).parent().parent();
+			//switch number
+			//port number
+			//new vlan
+			var switch_id = tr.data('switch-id');
+			var port_id = tr.data('port-id');
+			var port_num = tr.data('port-number');
+			var new_vlan = tr.find('.vlan-select > option:selected').val();
+
+			if(new_vlan === "null")
+				return;
+
+			$.ajax({
+				url: "{{url_for('vlan.setPortController')}}",
+				data: {
+					switch_id: switch_id,
+					port_id: port_id,
+					new_vlan: new_vlan
+				},
+				type: "POST",
+				success: function(resp) {
+					tr.find(".current-vlan").html(resp);
+
+					if($(".flashes").length == 0) {
+						$(".container").prepend('<div class="flashes" style="margin-top: 40px"></div>')
+					}
+					var msg = "Success! Port " + port_num + " set to VLAN " + resp + ".";
+					var html = '<div class="alert alert-success corners">'+ msg +'<a href="#" class="close" data-dismiss="alert">x</a></div>';
+					var alert = $(html);
+					$(".flashes").prepend(alert);
+
+					setTimeout(function(){
+						$(alert).fadeOut();
+					}, 10000)
+
+				}
+			})
+		});
+
+	})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends 'admin/master.html' %}
+{% block body %}
+<style>
+
+.row {
+	min-width: 1100px;
+}
+
+#users-list-wrapper {
+}
+
+#vlans-list-wrapper {
+/*	margin-left: 288px;*/
+}
+
+#controls  {
+/*	margin-left: 788px;*/
+	position: fixed;
+}
+
+.selected-list {
+	max-height: 300px;
+	overflow-y: scroll;
+}
+
+.batch-list > li {
+	display: block;
+	width: 190px 9;
+	margin: 0 0 -1px;
+	padding: 8px 14px;
+	border: 1px solid #E5E5E5;
+	color: #08C;
+	background: white;
+}
+
+.batch-list > li:first-child {
+  -webkit-border-radius: 6px 6px 0 0;
+     -moz-border-radius: 6px 6px 0 0;
+          border-radius: 6px 6px 0 0;
+}
+.batch-list > li:last-child {
+  -webkit-border-radius: 0 0 6px 6px;
+     -moz-border-radius: 0 0 6px 6px;
+          border-radius: 0 0 6px 6px;
+}
+
+.batch-list > .active > a {
+  position: relative;
+  z-index: 2;
+  padding: 9px 15px;
+  border: 0;
+  text-shadow: 0 1px 0 rgba(0,0,0,.15);
+  -webkit-box-shadow: inset 1px 0 0 rgba(0,0,0,.1), inset -1px 0 0 rgba(0,0,0,.1);
+     -moz-box-shadow: inset 1px 0 0 rgba(0,0,0,.1), inset -1px 0 0 rgba(0,0,0,.1);
+          box-shadow: inset 1px 0 0 rgba(0,0,0,.1), inset -1px 0 0 rgba(0,0,0,.1);
+}
+
+.batch-list > li > label {
+	display: inline-block;
+}
+
+.batch-list > li > input {
+	float: left;
+	margin-right: 20px;
+}
+
+.batch-list > li > label {
+	color: #08C;
+	cursor: pointer;
+	font-size: 1.2em;
+	font-weight: bold;
+	margin-bottom: 0px;
+	margin-top:1px;
+}
+
+.batch-list h3 {
+	text-align: center;
+}
+
+#switch-select {
+	width: 100%;
+}
+
+i {
+	float: right;
+	margin-top: 3px;
+	cursor: pointer;
+}
+
+i:hover {
+	background-color: rgba(255, 0, 0, .25);
+	border-radius: 10px;
+}
+
+</style>
+<h2> Batch Vlan Assignment </h2>
+<hr>
+<div class="row" style="margin-left: 0px; min-height: 500px;">
+	<div id="users-list-wrapper" class="span3 well">
+		<h3>Users</h3>
+		<hr/>
+		<ul id="user-list" class="nav batch-list">
+			{% for i in users %}
+				<li>
+					<label for="user-{{i.id}}">{{i.username}}</label>
+					<input data-user-id="{{i.id}}" type="checkbox" id="user-{{i.id}}" name="user-{{i.id}}">
+				</li>
+			{% endfor %}
+		</ul>
+	</div>
+
+	<div id="vlans-list-wrapper" class="span4">
+		<ul id="vlans-wrapper" class="nav well batch-list">
+			<h3>Vlans</h3>
+			<hr/>
+			<ul id="vlans-list" class="batch-list" style="margin-left: 0px">
+
+			</ul>
+		</ul>
+	</div>
+	<div id="controls" class="span3 well">
+		<h3>Selected vlans</h3>
+		<hr/>
+		<ul id="form-vlans-list" class="batch-list selected-list" style="margin-left: 0px" tabindex="1">
+		</ul>
+		<hr/>
+		<form style="text-align: center; padding:10px;">
+			<input id="add_vlans" type="button" style="width: 200px" class="btn btn-primary btn-large" value="Add Vlans">
+			<input id="remove_vlans" type="button" style="width: 200px" class="btn btn-danger btn-large" value="Remove Vlans">
+		</form>
+	</div>
+</div>
+
+{% endblock %}
+{% block tail %}
+<script>
+
+$(document).ready(function(){
+	var marginLeft = ($("#vlans-list-wrapper").offset().left - $(".container").offset().left) + $("#vlans-list-wrapper").outerWidth() + 20;
+	$("#controls").css("margin-left", marginLeft);
+
+	$(window).resize(function() {
+		var marginLeft = ($("#vlans-list-wrapper").offset().left - $(".container").offset().left) + $("#vlans-list-wrapper").outerWidth() + 20;
+		$("#controls").css("margin-left", marginLeft);
+	})
+});
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'admin/master.html' %}
+{% block body %}
+<h3> VLAN Overview </h3>
+<table class="table striped tablesorter">
+	<thead>
+		<th>User</th>
+		<th>Ports</th>
+		<th>Vlans</th>
+	</thead>
+	<tbody>
+		{% for i in data %}
+		<tr>
+			<td>{{i.user}}</td>
+			<td>
+				{% for j in i.ports.split(',') %}
+				{{j}}<br/>
+				{% endfor %}
+			</td>
+			<td>
+				{% for j in i.vlans.split(',') %}
+				{{j}}<br/>
+				{% endfor %}
+			</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+	<tfooter>
+	</tfooter>
+</table>
+{% endblock %}
