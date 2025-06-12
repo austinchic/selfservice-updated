@@ -15,5 +15,5 @@ fpconst==0.7.2
 pyasn1==0.1.4
 pysnmp==4.2.2
 python-ldap==2.4.9
-requests==1.0.3
+requests==2.32.4
 wstools==0.4
